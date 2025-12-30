@@ -1,4 +1,8 @@
-# Task Description: Add Priority-Based Message Scheduling to AMP Mailbox
+# Task: Add Priority-Based Message Scheduling to AMP Mailbox (Phase 2)
+
+Status: Pending
+
+Coding Agent Prompt: Select the Phase 2 priority mailbox task. Generate a short plan, then implement priority-aware mailbox send/recv with configurable priority levels, add priority stats/config, create a priority-messaging example and unit tests, update docs, and ensure the project builds.
 
 ## Goal
 Extend the existing AMP mailbox implementation to support priority-based message scheduling, allowing high-priority messages to be processed before lower-priority messages. This enhancement moves beyond the Phase 1 basic FIFO mailbox to support more sophisticated real-time communication patterns.

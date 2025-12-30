@@ -1,4 +1,8 @@
-# Task Description: Generate Phase 1 Architecture Diagrams
+# Task: Generate Phase 1 Architecture Diagrams (Phase 1)
+
+Status: Pending
+
+Coding Agent Prompt: Select the Phase 1 diagrams task. Create PlantUML (or equivalent) sources and SVG outputs for the required diagrams, add a Makefile and README under docs/diagrams, embed the diagrams into README and docs, and keep styles consistent.
 
 ## Goal
 Create comprehensive visual documentation for the AMP MCU Phase 1 implementation, including architecture diagrams, sequence diagrams, memory layouts, and data flow visualizations to improve understanding and adoption of the reference implementation.
@@ -278,7 +282,6 @@ docs/
 - All 7+ diagrams created and integrated
 - Diagrams are accurate and match code
 - Documentation references diagrams appropriately
-- Positive feedback from reviewers on clarity
 - Diagrams can be regenerated from source
 - No accessibility issues reported
 - Addresses lack of visual documentation in Phase 1
