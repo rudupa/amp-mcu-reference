@@ -63,7 +63,10 @@ size_t amp_ringbuf_available(amp_ringbuf_t rb)
     uint32_t write_idx = rb->write_idx;
     uint32_t read_idx = rb->read_idx;
     
-    /* Unsigned subtraction handles wraparound correctly */
+    /* Unsigned subtraction handles wraparound correctly
+     * Works because indices are never more than buffer size apart
+     * Example: write_idx=2, read_idx=UINT32_MAX yields 3 available bytes
+     */
     return (size_t)(write_idx - read_idx);
 }
 

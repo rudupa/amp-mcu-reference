@@ -35,7 +35,10 @@ static inline bool atomic_cas(volatile uint32_t *ptr, uint32_t old_val, uint32_t
         : "cc", "memory"
     );
     
-    /* CAS succeeded if we read old_val and STREX succeeded (tmp == 0) */
+    /* CAS succeeded if we read old_val
+     * (The loop retries until STREX succeeds, so if result == old_val,
+     * the store also succeeded)
+     */
     return (result == old_val);
 #else
     /* Use GCC built-in atomic compare-and-swap for non-ARM platforms */
