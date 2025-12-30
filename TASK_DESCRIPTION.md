@@ -1,158 +1,158 @@
-# Task Description: Implement Inter-Core Communication Module for AMP MCU
+# Task Description: Add Priority-Based Message Scheduling to AMP Mailbox
 
 ## Goal
-Implement a lightweight, deterministic inter-core communication (IPC) module that enables message passing between two cores in an Asymmetric Multi-Processing (AMP) dual-core MCU system using shared memory and hardware semaphores.
+Extend the existing AMP mailbox implementation to support priority-based message scheduling, allowing high-priority messages to be processed before lower-priority messages. This enhancement moves beyond the Phase 1 basic FIFO mailbox to support more sophisticated real-time communication patterns.
 
 ## Background
-In AMP systems, each core runs its own independent software stack. Core 0 (primary) typically handles system initialization and high-level tasks, while Core 1 (secondary) handles real-time processing. This task focuses on establishing reliable communication between the cores.
+The current AMP MCU reference implementation (Phase 1) includes a basic FIFO mailbox for inter-core communication. However, many real-time embedded systems require priority-based message handling where urgent messages (e.g., sensor alerts, safety-critical events) must be processed before routine messages (e.g., status updates, logging). This task implements priority queuing as identified in the Phase 1 limitations.
 
 ## Files/Modules Involved
 
-### New Files to Create
-- `src/ipc/ipc_core.c` - Core IPC implementation with send/receive functions
-- `src/ipc/ipc_core.h` - Public API and data structure definitions
-- `include/ipc_config.h` - Configuration parameters (buffer sizes, memory regions)
-- `src/ipc/ringbuffer.c` - Lock-free ring buffer implementation for message queues
-- `src/ipc/ringbuffer.h` - Ring buffer interface
-- `tests/test_ipc.c` - Unit tests for IPC module
+### Files to Modify
+- `runtime/include/amp_mailbox.h` - Add priority field to message structure and priority-aware API
+- `runtime/src/amp_mailbox.c` - Implement priority queue logic
+- `runtime/include/amp_config.h` - Add configuration for number of priority levels
 
-### Supporting Files
-- `src/platform/hw_semaphore.c` - Hardware semaphore abstraction layer
-- `src/platform/hw_semaphore.h` - Hardware semaphore API
-- `linker/shared_memory.ld` - Linker script fragment defining shared memory region
+### New Files to Create
+- `runtime/src/amp_priority_queue.c` - Priority queue implementation (internal)
+- `runtime/include/amp_priority_queue.h` - Priority queue interface (internal)
+- `examples/priority-messaging/priority_msg.c` - Example demonstrating priority messaging
+- `tests/test_priority_mailbox.c` - Unit tests for priority mailbox functionality
+
+### Files to Review (No Changes)
+- `runtime/src/amp_semaphore.c` - Existing synchronization (reused)
+- `runtime/src/amp_shmem.c` - Existing shared memory allocator (reused)
 
 ## Expected Inputs and Outputs
 
 ### Inputs
-1. **Message Structure**:
+1. **Message Structure** (Enhanced):
    - Message ID (uint32_t)
-   - Payload data (byte array, max 256 bytes)
+   - Payload data (byte array, existing max size per mailbox config)
    - Payload length (uint32_t)
-   - Priority (uint8_t): 0=low, 1=normal, 2=high
+   - **Priority (amp_priority_t)**: NEW field
+     - `AMP_PRIORITY_LOW` (0)
+     - `AMP_PRIORITY_NORMAL` (1) - default
+     - `AMP_PRIORITY_HIGH` (2)
+     - `AMP_PRIORITY_CRITICAL` (3)
 
 2. **Configuration Parameters** (compile-time):
-   - Shared memory base address
-   - Ring buffer size (number of messages)
-   - Maximum message payload size
-   - Timeout values for blocking operations
+   - Number of priority levels (default: 4)
+   - Per-priority queue depth limits
+   - Priority preemption policy (strict vs. weighted)
 
 ### Outputs
-1. **API Return Values**:
-   - `IPC_SUCCESS` (0): Operation completed successfully
-   - `IPC_ERROR_FULL` (-1): Message queue is full
-   - `IPC_ERROR_EMPTY` (-2): No messages available
-   - `IPC_ERROR_TIMEOUT` (-3): Operation timed out
-   - `IPC_ERROR_INVALID` (-4): Invalid parameters
+1. **API Return Values** (Compatible with existing):
+   - `AMP_SUCCESS` (0): Operation completed successfully
+   - `AMP_ERROR_FULL` (-1): Message queue is full for this priority
+   - `AMP_ERROR_EMPTY` (-2): No messages available
+   - `AMP_ERROR_TIMEOUT` (-3): Operation timed out
+   - `AMP_ERROR_INVALID` (-4): Invalid parameters or priority
 
-2. **Status Information**:
-   - Number of messages pending
-   - Buffer utilization percentage
-   - Dropped message count
-   - Last error code
+2. **Status Information** (Enhanced):
+   - Number of messages pending per priority level
+   - Buffer utilization per priority
+   - Dropped message count per priority
+   - Highest priority message waiting
+   - Priority inversion events (if any)
 
 ## Functional Requirements
 
-### FR1: Message Send (Non-blocking)
-- **Function**: `int32_t ipc_send(uint32_t msg_id, const uint8_t* payload, uint32_t len, uint8_t priority)`
-- Validate input parameters (null checks, length limits)
-- Acquire hardware semaphore with timeout
-- Write message to ring buffer in shared memory
-- Update write pointer atomically
-- Release hardware semaphore
-- Return status code
+### FR1: Priority-Based Message Send
+- **Function**: `amp_status_t amp_mailbox_send_priority(amp_mailbox_t* mbox, const void* data, size_t len, amp_priority_t priority)`
+- Extends existing `amp_mailbox_send()` with priority parameter
+- Validate priority level is within configured range
+- Place message in appropriate priority queue
+- Maintain ordering within same priority (FIFO per priority)
+- Return appropriate status code
 
-### FR2: Message Receive (Non-blocking)
-- **Function**: `int32_t ipc_receive(uint32_t* msg_id, uint8_t* payload, uint32_t* len, uint32_t timeout_ms)`
-- Check if messages are available
-- Acquire hardware semaphore with timeout
-- Read message from ring buffer
-- Update read pointer atomically
-- Release hardware semaphore
-- Copy message to caller's buffer
-- Return status code
+### FR2: Priority-Based Message Receive
+- **Function**: `amp_status_t amp_mailbox_recv_priority(amp_mailbox_t* mbox, void* data, size_t* len, uint32_t timeout_ms)`
+- Always dequeue highest priority message first
+- If multiple priorities have messages, select from highest
+- Maintain FIFO order within same priority level
+- Compatible with existing `amp_mailbox_recv()` behavior
 
-### FR3: Initialization
-- **Function**: `int32_t ipc_init(uint8_t core_id)`
-- Initialize shared memory region (Core 0 only)
-- Clear ring buffer structures
-- Initialize hardware semaphores
-- Set core-specific configuration
-- Perform handshake to verify both cores are ready
-- Return status code
+### FR3: Backward Compatibility
+- **Function**: Maintain existing `amp_mailbox_send()` and `amp_mailbox_recv()` APIs
+- Default priority is `AMP_PRIORITY_NORMAL` for legacy sends
+- Existing examples continue to work without modification
+- New priority field in mailbox structure is optional
 
-### FR4: Status Query
-- **Function**: `int32_t ipc_get_status(ipc_status_t* status)`
-- Return current queue depth
-- Calculate buffer utilization
-- Report error statistics
-- Return last communication timestamp
+### FR4: Priority Configuration
+- **Function**: `amp_status_t amp_mailbox_create_priority(amp_mailbox_t* mbox, const amp_mailbox_config_t* config)`
+- Allow configuration of number of priority levels (2-8)
+- Configure per-priority queue depths
+- Set total memory budget for all priority queues
+- Initialize priority queue data structures in shared memory
 
-### FR5: Thread Safety
-- Use hardware semaphores for mutual exclusion
-- Implement lock-free algorithms where possible
-- Ensure atomic operations for pointer updates
-- No dynamic memory allocation (embedded constraint)
+### FR5: Status and Diagnostics
+- **Function**: `amp_status_t amp_mailbox_get_priority_stats(amp_mailbox_t* mbox, amp_priority_stats_t* stats)`
+- Return per-priority queue depths
+- Report dropped messages by priority
+- Identify priority starvation conditions
+- Provide debugging information for priority issues
 
 ## Non-Functional Requirements
 
 ### NFR1: Performance
-- Message send/receive latency: < 10 microseconds (typical case)
-- Zero-copy where possible for large payloads
-- Minimal CPU overhead (< 5% for 1000 msg/sec throughput)
+- Priority determination overhead: < 1 microsecond
+- Send/receive latency similar to existing mailbox (< 10 microseconds)
+- Minimal memory overhead: < 16 bytes per priority level
+- No heap allocation (use existing shared memory allocator)
 
 ### NFR2: Reliability
 - No message loss under normal operation
-- Graceful degradation when buffers are full
-- Detect and report communication errors
-- Support reset/recovery without system reboot
+- No priority inversion (high priority always processed first)
+- Graceful degradation when priority queues are full
+- Detect and report starvation of low-priority messages
 
 ### NFR3: Resource Constraints
-- Total RAM usage: < 8 KB (including buffers)
-- Code size: < 4 KB
-- No heap allocation (stack and static memory only)
-- Compatible with bare-metal and RTOS environments
+- Additional RAM usage: < 1 KB for 4 priority levels
+- Code size increase: < 2 KB
+- Compatible with existing AMP runtime architecture
+- Reuse existing semaphore and shared memory infrastructure
 
-### NFR4: Portability
-- Abstract hardware-specific features (semaphores, memory barriers)
-- Support different dual-core MCU architectures (Cortex-M4+M0, Cortex-M7+M4, etc.)
-- Configurable memory layout via linker script
-- Standard C99 compliance
+### NFR4: Compatibility
+- Maintain backward compatibility with existing mailbox API
+- Existing examples work without modification
+- New priority API is opt-in (use priority variant or standard)
+- Platform-independent (works on RP2350 and generic platforms)
 
 ## Acceptance Criteria
 
 ### AC1: Functional Correctness
-- [ ] Core 0 can send a message and Core 1 receives it correctly
-- [ ] Core 1 can send a message and Core 0 receives it correctly
-- [ ] Bidirectional communication works simultaneously
-- [ ] Messages are received in FIFO order for same priority
-- [ ] High-priority messages are handled before low-priority when enabled
-- [ ] Buffer full condition is detected and reported correctly
-- [ ] Buffer empty condition is detected and reported correctly
-- [ ] Invalid parameters are rejected with appropriate error codes
+- [ ] High-priority message sent after low-priority is received first
+- [ ] Messages of same priority are received in FIFO order
+- [ ] Backward compatibility: existing mailbox examples still work
+- [ ] Priority field can be queried from received messages
+- [ ] All priority levels can send and receive messages
+- [ ] Buffer full condition reported per-priority correctly
+- [ ] Invalid priority levels are rejected with appropriate error
 
 ### AC2: Robustness
-- [ ] System handles rapid message bursts (> 1000 messages/sec)
-- [ ] No deadlocks occur under any message pattern
-- [ ] Graceful behavior when one core stops responding
-- [ ] Memory corruption detection (buffer overruns prevented)
-- [ ] Correct operation after IPC reset
+- [ ] System handles mixed priority message bursts correctly
+- [ ] Low-priority messages eventually processed (no starvation)
+- [ ] Priority queues handle overflow gracefully
+- [ ] Correct operation with all priority queues in use simultaneously
+- [ ] No priority inversion issues detected
 
 ### AC3: Testing
-- [ ] Unit tests achieve > 90% code coverage
-- [ ] Integration test with both cores running passes
-- [ ] Stress test (sustained load for 1 hour) passes
-- [ ] Error injection tests (full buffer, invalid params) pass
-- [ ] Performance benchmarks meet latency requirements
+- [ ] Unit tests achieve > 90% code coverage for new priority code
+- [ ] New priority-messaging example demonstrates all priority levels
+- [ ] Stress test with mixed priorities for 1 hour passes
+- [ ] Backward compatibility test: existing examples pass unchanged
+- [ ] Performance benchmarks show < 10% overhead vs. non-priority mailbox
 
 ### AC4: Documentation
-- [ ] API functions have complete doxygen comments
-- [ ] Architecture diagram shows memory layout and data flow
-- [ ] Usage examples demonstrate common scenarios
-- [ ] Configuration guide explains all parameters
-- [ ] Known limitations are documented
+- [ ] Priority API functions have complete doxygen comments
+- [ ] README updated with priority messaging example
+- [ ] EXAMPLES.md includes priority-messaging example
+- [ ] AMP_CONTRACT.md updated to reflect priority capability
+- [ ] Migration guide for upgrading from basic to priority mailbox
 
 ### AC5: Code Quality
-- [ ] Follows project coding standards (MISRA-C subset)
+- [ ] Follows existing AMP codebase style and conventions
 - [ ] No compiler warnings with -Wall -Wextra
 - [ ] Static analysis (cppcheck) reports no issues
 - [ ] Memory-safe (no buffer overflows, null dereferences)
@@ -160,53 +160,90 @@ In AMP systems, each core runs its own independent software stack. Core 0 (prima
 
 ## Implementation Notes
 
-### Memory Layout
-```
-Shared Memory Region (8 KB @ 0x20000000):
-  +0x0000: Core 0 to Core 1 Ring Buffer (3 KB)
-  +0x0C00: Core 1 to Core 0 Ring Buffer (3 KB)
-  +0x1800: Control/Status Structure (512 bytes)
-  +0x1A00: Reserved (1.5 KB)
+### Priority Queue Design
+
+Multiple approaches possible:
+1. **Multiple FIFOs** - Separate queue per priority (simple, recommended)
+2. **Sorted List** - Single queue with priority ordering (complex)
+3. **Bitmap + Arrays** - Fast priority lookup (memory intensive)
+
+Recommended: Multiple FIFOs approach for simplicity and performance.
+
+### Memory Layout (Extension of existing shared memory)
+
+```c
+// Priority mailbox extends amp_mailbox_t
+typedef struct {
+    amp_mailbox_t base;           // Existing mailbox structure
+    uint8_t num_priorities;        // Number of priority levels
+    uint8_t priority_bitmap;       // Bit per priority (has messages?)
+    struct {
+        uint32_t head;             // Queue head index
+        uint32_t tail;             // Queue tail index
+        uint32_t capacity;         // Max messages for this priority
+        uint32_t dropped;          // Dropped message count
+    } queues[AMP_MAX_PRIORITIES];  // Per-priority queue metadata
+    // Message buffers follow in shared memory
+} amp_priority_mailbox_t;
 ```
 
-### Ring Buffer Structure
-```c
-typedef struct {
-    volatile uint32_t write_idx;
-    volatile uint32_t read_idx;
-    volatile uint32_t capacity;
-    volatile uint32_t msg_size;
-    uint8_t buffer[RING_BUFFER_SIZE];
-} ring_buffer_t;
-```
+### Message Format (Enhancement)
 
-### Message Format
 ```c
 typedef struct {
-    uint32_t msg_id;
+    amp_priority_t priority;       // NEW: Message priority
+    uint32_t msg_id;               // Existing fields
     uint32_t length;
-    uint8_t priority;
-    uint8_t reserved[3];
-    uint8_t payload[MAX_PAYLOAD_SIZE];
-} ipc_message_t;
+    uint8_t data[AMP_MAX_MSG_SIZE];
+} amp_priority_msg_t;
+```
+
+### API Usage Example
+
+```c
+// Initialize priority mailbox (on Core 0)
+amp_mailbox_config_t config = {
+    .num_priorities = 4,
+    .max_msg_size = 256,
+    .total_capacity = 32
+};
+amp_mailbox_t mbox;
+amp_mailbox_create_priority(&mbox, &config);
+
+// Send high-priority alert from Core 1
+uint8_t alert_data[] = "SENSOR_FAULT";
+amp_mailbox_send_priority(&mbox, alert_data, sizeof(alert_data), AMP_PRIORITY_HIGH);
+
+// Send normal-priority status
+uint8_t status_data[] = "STATUS_OK";
+amp_mailbox_send_priority(&mbox, status_data, sizeof(status_data), AMP_PRIORITY_NORMAL);
+
+// Receive on Core 0 - alert comes first!
+uint8_t buffer[256];
+size_t len;
+amp_mailbox_recv_priority(&mbox, buffer, &len, 1000); // Gets "SENSOR_FAULT" first
 ```
 
 ## Dependencies
-- ARM CMSIS headers (for memory barriers, atomic operations)
-- Hardware abstraction layer for target MCU
-- Build system: CMake or Makefile
-- Testing framework: Unity or custom minimal framework
+- Existing AMP runtime (amp_mailbox, amp_semaphore, amp_shmem)
+- ARM CMSIS headers (already in use)
+- CMake build system (already configured)
+- Existing test framework from examples
 
 ## Estimated Effort
-- Design and setup: 2 hours
-- Core implementation: 4 hours
-- Testing and debugging: 3 hours
+- Design and planning: 1 hour
+- Core priority queue implementation: 3 hours
+- API extensions and integration: 2 hours
+- Example application: 1 hour
+- Testing and debugging: 2 hours
 - Documentation: 1 hour
 - **Total: ~10 hours (single development session over 1-2 days)**
 
 ## Success Metrics
-- Successfully demonstrated bidirectional message passing
-- All acceptance criteria met
-- Clean compilation with no warnings
+- All existing examples pass without modification (backward compatibility)
+- New priority-messaging example successfully demonstrates priority ordering
+- High-priority message latency < 10 microseconds (same as current mailbox)
+- Memory overhead < 1 KB for 4-priority configuration
 - Test suite passes with 100% success rate
-- Code review approved by peer
+- Code review approved
+- Addresses Phase 1 limitation: "No priority-based scheduling"

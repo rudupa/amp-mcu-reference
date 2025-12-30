@@ -1,63 +1,78 @@
 # Task Summary
 
 ## Quick Reference
-**Task**: Implement Inter-Core Communication Module for AMP MCU  
+**Task**: Add Priority-Based Message Scheduling to AMP Mailbox  
 **Scope**: Single development session (~10 hours)  
-**Type**: Embedded Systems / AMP MCU Core Feature  
+**Type**: Phase 2 Enhancement - Addresses Phase 1 Limitation  
 
 ## What's Inside
-This repository now contains a complete, actionable task description for implementing an inter-core communication (IPC) module for dual-core MCU systems.
+This repository now contains a complete, actionable task description for extending the existing AMP mailbox implementation with priority-based message scheduling.
 
 ## Key Components
 
 ### 📋 Full Task Description
 See [`TASK_DESCRIPTION.md`](./TASK_DESCRIPTION.md) for the complete specification including:
-- Detailed goal and background
-- Specific files and modules to create
-- Expected inputs and outputs with data structures
+- Detailed goal and background (extends existing AMP runtime)
+- Files to modify and create (builds on amp_mailbox)
+- Expected inputs and outputs with priority levels
 - Functional requirements (FR1-FR5)
-- Non-functional requirements (performance, reliability, portability)
+- Non-functional requirements (performance, compatibility)
 - Comprehensive acceptance criteria
-- Implementation notes with memory layout and code examples
+- Implementation notes with multiple design approaches
 
 ### ✅ Verification Checklist
 The task includes a complete checklist covering:
-- **Functional Correctness**: Bidirectional message passing, FIFO ordering, error handling
-- **Robustness**: Stress testing, deadlock prevention, memory safety
-- **Testing**: 90%+ code coverage, integration tests, performance benchmarks
-- **Documentation**: API docs, architecture diagrams, usage examples
-- **Code Quality**: MISRA-C compliance, zero warnings, static analysis
+- **Functional Correctness**: Priority ordering, FIFO within priority, backward compatibility
+- **Robustness**: No starvation, graceful overflow, no priority inversion
+- **Testing**: 90%+ code coverage, stress tests, backward compatibility validation
+- **Documentation**: API docs, examples, migration guide
+- **Code Quality**: Follows existing AMP conventions, zero warnings
 
 ### 🎯 Success Criteria
-- Bidirectional IPC between Core 0 and Core 1
-- Message latency < 10 microseconds
-- Zero message loss under normal operation
-- Resource usage: < 8 KB RAM, < 4 KB code
+- High-priority messages processed before low-priority
+- Backward compatible (existing examples still work)
+- Memory overhead < 1 KB for 4 priority levels
+- Priority latency overhead < 1 microsecond
 - All tests passing with 100% success rate
 
 ## Why This Task?
-This task is ideal for the AMP MCU reference implementation because it:
-1. **Addresses a core requirement**: IPC is fundamental to AMP systems
-2. **Is well-scoped**: Can be completed in a single development session
-3. **Is measurable**: Clear acceptance criteria and success metrics
-4. **Is vendor-neutral**: Abstract hardware-specific features for portability
-5. **Demonstrates best practices**: Deterministic behavior, resource constraints, thread safety
+This task is ideal as a Phase 2 enhancement because it:
+1. **Addresses a Phase 1 limitation**: "No priority-based scheduling" is explicitly listed
+2. **Builds on existing infrastructure**: Uses established mailbox, semaphore, and shared memory
+3. **Is well-scoped**: Can be completed in a single development session
+4. **Is measurable**: Clear acceptance criteria and success metrics
+5. **Maintains compatibility**: Existing examples continue to work
+6. **Adds real value**: Priority messaging is essential for real-time embedded systems
+
+## Context
+The AMP MCU reference implementation (Phase 1) already includes:
+- ✅ Boot management (`amp_boot.h`)
+- ✅ Shared memory allocator (`amp_shmem.h`)
+- ✅ Basic FIFO mailbox (`amp_mailbox.h`)
+- ✅ Semaphores (`amp_semaphore.h`)
+- ✅ Ring buffers (`amp_ringbuf.h`)
+- ✅ Three working examples
+
+This task extends the mailbox with priority support while maintaining full backward compatibility.
 
 ## Next Steps
 1. Review the full task description in `TASK_DESCRIPTION.md`
-2. Set up development environment for target dual-core MCU
-3. Create project structure (src/, include/, tests/, linker/)
-4. Implement IPC module following the specification
-5. Run tests and validate against acceptance criteria
-6. Document and demonstrate the working solution
+2. Familiarize yourself with existing `amp_mailbox.h` and `amp_mailbox.c`
+3. Review Phase 1 limitations in main branch README
+4. Design priority queue data structure
+5. Implement priority extensions to mailbox
+6. Create priority-messaging example
+7. Run tests and validate against acceptance criteria
+8. Update documentation
 
 ## Technical Highlights
-- **Lock-free ring buffer** for efficient message passing
-- **Hardware semaphores** for mutual exclusion
-- **Zero-copy design** where possible for performance
-- **Priority-based messaging** for real-time requirements
-- **Deterministic behavior** suitable for safety-critical systems
-- **Bare-metal compatible** with no OS dependencies
+- **Multiple priority levels** (configurable 2-8, default 4)
+- **Strict priority ordering** - high priority always first
+- **FIFO within priority** - maintains ordering fairness
+- **Zero heap allocation** - uses existing shared memory allocator
+- **Backward compatible** - existing API unchanged
+- **Low overhead** - < 1 KB RAM, < 1 μs latency for priority determination
+- **No starvation** - monitors and reports low-priority queue health
 
 ---
-*This task description was generated as a reference implementation for the amp-mcu-reference project, demonstrating how to create clear, actionable development tasks for embedded systems.*
+*This task description builds on the Phase 1 AMP MCU reference implementation, extending the basic FIFO mailbox with priority-based scheduling to support real-time embedded system requirements.*
