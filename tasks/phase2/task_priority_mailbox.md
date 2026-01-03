@@ -8,7 +8,7 @@ Coding Agent Prompt: Select the Phase 2 priority mailbox task. Generate a short 
 Extend the existing AMP mailbox implementation to support priority-based message scheduling, allowing high-priority messages to be processed before lower-priority messages. This enhancement moves beyond the Phase 1 basic FIFO mailbox to support more sophisticated real-time communication patterns.
 
 ## Background
-The current AMP MCU reference implementation (Phase 1) includes a basic FIFO mailbox for inter-core communication. However, many real-time embedded systems require priority-based message handling where urgent messages (e.g., sensor alerts, safety-critical events) must be processed before routine messages (e.g., status updates, logging). This task implements priority queuing as identified in the Phase 1 limitations.
+The current AMP platform reference implementation (Phase 1) includes a basic FIFO mailbox for inter-core communication. However, many real-time embedded systems require priority-based message handling where urgent messages (e.g., sensor alerts, safety-critical events) must be processed before routine messages (e.g., status updates, logging). This task implements priority queuing as identified in the Phase 1 limitations.
 
 ## Files/Modules Involved
 

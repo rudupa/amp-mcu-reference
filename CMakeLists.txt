@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
 # Project configuration
-project(amp-mcu-reference 
+project(amp-platform-reference 
     VERSION 1.0.0
-    DESCRIPTION "Vendor-neutral AMP reference implementation for dual-core MCUs"
+    DESCRIPTION "Vendor-neutral AMP platform reference for dual-core MCUs"
     LANGUAGES C ASM
 )
 
@@ -63,7 +63,7 @@ install(DIRECTORY runtime/include/
 
 # Summary
 message(STATUS "")
-message(STATUS "=== AMP MCU Reference Configuration ===")
+message(STATUS "=== AMP Platform Reference Configuration ===")
 message(STATUS "  Platform:        ${AMP_PLATFORM}")
 message(STATUS "  Build Type:      ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Build Examples:  ${BUILD_EXAMPLES}")

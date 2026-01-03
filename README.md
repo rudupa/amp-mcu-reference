@@ -1,11 +1,5 @@
 # amp-platform-reference
-Vendor‑neutral AMP reference implementation for multi‑core MCUs, SoCs, HPCs — deterministic boot, domain config, minimal IPC, and reproducible examples (Phase 1).
-
-# AMP MCU Reference Implementation
-
-Vendor-neutral Asymmetric Multiprocessing (AMP) reference implementation for dual-core MCUs — featuring deterministic boot, domain configuration, minimal IPC primitives, and reproducible examples.
-
-**Phase 1** - Foundation release with core functionality.
+Vendor‑neutral AMP platform reference for multi‑core MCUs and SoCs — deterministic boot, domain config, minimal IPC, and reproducible examples (Phase 1).
 
 ## Overview
 

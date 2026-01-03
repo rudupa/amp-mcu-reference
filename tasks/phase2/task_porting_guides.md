@@ -5,7 +5,7 @@ Status: Pending
 Coding Agent Prompt: Select the Phase 2 porting-guides task. Draft RP2040 and ESP32-S3 porting guides plus a generic template, add platform CMake entries, outline boot/memory/sync adaptations, integrate with README and AMP_CONTRACT, and keep the work buildable.
 
 ## Goal
-Create comprehensive porting guides that enable developers to adapt the AMP MCU reference implementation (currently supporting RP2350 and generic platforms) to RP2040 and ESP32-S3 dual-core microcontrollers. These guides will serve as templates for porting to other platforms.
+Create comprehensive porting guides that enable developers to adapt the AMP platform reference implementation (currently supporting RP2350 and generic platforms) to RP2040 and ESP32-S3 dual-core microcontrollers. These guides will serve as templates for porting to other platforms.
 
 ## Background
 The Phase 1 AMP implementation is designed to be vendor-neutral and portable. While it currently supports:

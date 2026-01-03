@@ -1,6 +1,6 @@
 # Build and Flash Tools
 
-This directory contains helper scripts for building and flashing the AMP MCU Reference examples.
+This directory contains helper scripts for building and flashing the AMP Platform Reference examples.
 
 ## build.sh
 
