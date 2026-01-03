@@ -180,6 +180,31 @@ Platform ports must include:
 
 ---
 
+## Planned Repository Layout (for profiles + boards)
+
+Planned top-level structure to keep profiles and platforms isolated and discoverable:
+- main/
+- profiles/
+	- profile_a/
+	- profile_b/
+	- profile_c/
+	- profile_d/
+- platforms/
+	- rp2350/
+	- rp2040/
+	- polarfire/
+	- am64x/
+	- s32k3/
+	- aurix/
+	- ...
+
+Why this helps:
+- Profiles evolve independently while boards map cleanly to profiles.
+- Avoids fragmentation and long-lived branches.
+- Contributors know exactly where to add or update support.
+
+---
+
 ## Thank You
 
 This project aims to become the canonical reference for vendor‑neutral AMP on MCUs.

@@ -100,6 +100,12 @@ for industrial, automotive, and IoT systems.
 - Agent‑friendly tasks + issue templates
 - Platform expansion (RP2040, STM32H7, ESP32‑S3, i.MX RT1170, PolarFire)
 
+### Planned Repository Layout
+- profiles/: profile_a/, profile_b/, profile_c/, profile_d/
+- platforms/: rp2350/, rp2040/, polarfire/, am64x/, s32k3/, aurix/, …
+
+Rationale: keep profiles evolving independently, map boards to profiles without extra branches, and make contributor entry-points obvious.
+
 ---
 
 ## Vision
